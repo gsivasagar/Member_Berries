@@ -1,29 +1,49 @@
 'use client'
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage(){
-    const supabase =createClient()
+export default function LoginPage() {
+    const supabase = createClient()
 
     const handleLogin = () => {
         supabase.auth.signInWithOAuth({
-            provider:'google',
-            options:{
+            provider: 'google',
+            options: {
                 redirectTo: `${location.origin}/auth/callback`,
             },
         })
     }
-    
+
     return (
-        <div className="flex h-screen items-center justify-center bg-gray-100">
-        <div className="p-10 bg-white rounded-lg shadow-xl text-center">
-            <h1 className="text-3xl font-bold mb-6 text-gray-800">Smart Bookmarks</h1>
-            <button
-            onClick={handleLogin}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2 mx-auto"
-            >
-            <span>Sign in with Google</span>
-            </button>
-        </div>
+        <div className="flex min-h-screen flex-col justify-center px-6 py-12 lg:px-8 bg-gray-900">
+            <div className="sm:mx-auto sm:w-full sm:max-w-sm">
+                <img
+                    className="mx-auto h-32 w-auto animate-bounce"
+                    // src="https://upload.wikimedia.org/wikipedia/en/3/36/Member_Berries.jpg"
+                    alt="Member Berries"
+                />
+                <h2 className="mt-10 text-center text-2xl/9 font-bold tracking-tight text-white">
+                    Sign in to your account
+                </h2>
+            </div>
+
+            <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+                <div>
+                    <button
+                        onClick={handleLogin}
+                        type="button"
+                        className="flex w-full justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                    >
+                        Sign in with Google
+                    </button>
+                </div>
+
+                <p className="mt-10 text-center text-sm/6 text-gray-400">
+                    Not a member?{' '}
+                    <a href="#" className="font-semibold text-indigo-400 hover:text-indigo-300">
+                        Start a 14 day free trial
+                    </a>
+                </p>
+            </div>
         </div>
     );
 }

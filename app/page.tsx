@@ -11,10 +11,11 @@ export default async function Home() {
   if (!user) {
     redirect('/login')
   }
+
   return (
     <main className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-black">Member Berries</h1>
+        <h1 className="text-2xl font-bold text-black">MemberBerries</h1>
         <div className="flex gap-4 items-center">
           <span className="text-sm text-black">{user.email}</span>
           <form action={signOut}>
