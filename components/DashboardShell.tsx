@@ -5,7 +5,7 @@ import { User } from '@supabase/supabase-js'
 import { signOut } from '@/app/actions'
 
 const navigation = [
-    { name: 'My Bookmarks', href: '#', current: true },
+    { name: 'All Bookmarks', href: '#', current: true },
     { name: 'Team', href: '#', current: false },
     { name: 'Projects', href: '#', current: false },
     { name: 'Calendar', href: '#', current: false },
