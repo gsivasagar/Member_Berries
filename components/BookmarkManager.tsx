@@ -78,12 +78,21 @@ export default function BookmarkManager({ user }: { user: User }) {
         e.preventDefault()
         if (!title || !url) return
 
-        // if (!isValidUrl(url)) {
-        //     alert("Please enter a valid URL (e.g., https://example.com)")
-        //     return
-        // }
+        // Optimistic update
+        const tempId = Math.random().toString(36).substr(2, 9)
+        const newBookmark: Bookmark = { id: tempId, title, url, user_id: user.id }
+        setBookmarks((prev) => [newBookmark, ...prev])
 
-        await supabase.from('bookmarks').insert({ title, url, user_id: user.id })
+        const { data, error } = await supabase.from('bookmarks').insert({ title, url, user_id: user.id }).select()
+
+        if (error) {
+            console.error(error)
+            // Revert on error
+            setBookmarks((prev) => prev.filter(b => b.id !== tempId))
+        } else if (data) {
+            // Replace temp ID with real ID from server
+            setBookmarks((prev) => prev.map(b => b.id === tempId ? data[0] : b))
+        }
 
         setTitle('')
         setUrl('')
@@ -146,7 +155,7 @@ export default function BookmarkManager({ user }: { user: User }) {
                     value={url}
                     onChange={e => {
                         setUrl(e.target.value)
-                        setUrlError(!isValidUrl(url))
+                        setUrlError(!isValidUrl(e.target.value))
                     }}
                 />
                 <button className="bg-green-600 text-white px-4 rounded hover:bg-green-700"
