@@ -11,40 +11,26 @@ export default async function Home() {
   if (!user) {
     redirect('/login')
   }
+  return (
+    <main className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold text-black">Member Berries</h1>
+        <div className="flex gap-4 items-center">
+          <span className="text-sm text-black">{user.email}</span>
 
-//   return (
-//     <main className="min-h-screen bg-gray-50 p-4">
-//       <div className="max-w-4xl mx-auto flex justify-between items-center mb-8">
-//         <h1 className="text-2xl font-bold text-black">My Bookmarks</h1>
-//         <div className="flex gap-4 items-center">
-//            <span className="text-sm text-black">{user.email}</span>
-           
-//         </div>
-//       </div>
-//       <BookmarkManager user={user} />
-//     </main>
-//   )
-// }
-return (
-  <main className="min-h-screen bg-gray-50 p-4">
-    <div className="max-w-4xl mx-auto flex justify-between items-center mb-8">
-      <h1 className="text-2xl font-bold text-black">My Bookmarks</h1>
-      <div className="flex gap-4 items-center">
-         <span className="text-sm text-black">{user.email}</span>
-         
-         {/* Logout Button Form */}
-         <form action={signOut}>
-           <button 
-             type="submit" 
-             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm transition-colors"
-           >
-             Logout
-           </button>
-         </form>
+          {/* Logout Button Form */}
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm transition-colors"
+            >
+              Logout
+            </button>
+          </form>
 
+        </div>
       </div>
-    </div>
-    <BookmarkManager user={user} />
-  </main>
-)
+      <BookmarkManager user={user} />
+    </main>
+  )
 }

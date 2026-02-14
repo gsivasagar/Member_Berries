@@ -96,7 +96,7 @@ export default function BookmarkManager({ user }: { user: User }) {
             .update({ title: editTitle, url: editUrl })
             .eq('id', id)
         if (error) {
-            console.error("❌ Update Error:", error.message)
+            console.error("Update Error:", error.message)
             alert("Error saving edit: " + error.message)
             return
         }
