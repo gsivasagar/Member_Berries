@@ -1,32 +1,35 @@
 'use client'
 
 import { createClient } from "@/lib/supabase/client"
-import { useEffect, useState } from "react"
-import {User} from '@supabase/supabase-js'
+import { useEffect, useState, useCallback } from "react"
+import { User } from '@supabase/supabase-js'
 
-type Bookmark ={
-    id:string; title: string; url: string; user_id:string
+type Bookmark = {
+    id: string; title: string; url: string; user_id: string
 }
 
-export default function BookmarkManager({user}:{user:User}){
+export default function BookmarkManager({ user }: { user: User }) {
     const supabase = createClient()
     const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
-    const [title,setTitle] = useState('')
+    const [title, setTitle] = useState('')
     const [url, setUrl] = useState('')
 
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editTitle, setEditTitle] = useState('')
     const [editUrl, setEditUrl] = useState('')
 
-    useEffect(() =>{
-        const fetchBookmarks = async() =>{
-            const{data}=await supabase.from('bookmarks').select('*').order('created_at',{ascending:false})
-            if(data){
-                setBookmarks(data)
-            }
+    const fetchBookmarks = useCallback(async () => {
+        const { data } = await supabase.from('bookmarks').select('*').order('created_at', { ascending: false })
+        if (data) {
+            setBookmarks(data)
         }
+    }, [supabase])
+
+    useEffect(() => {
         fetchBookmarks()
-    },[])
+        const interval = setInterval(fetchBookmarks, 5000)
+        return () => clearInterval(interval)
+    }, [fetchBookmarks])
 
     useEffect(() => {
         const channel = supabase
@@ -41,14 +44,14 @@ export default function BookmarkManager({user}:{user:User}){
                     setBookmarks((prev) => {
                         const alreadyExists = prev.some(b => b.id === payload.new.id)
                         if (alreadyExists) {
-                            return prev 
+                            return prev
                         }
                         return [payload.new as Bookmark, ...prev]
                     })
-                } 
+                }
                 else if (payload.eventType === 'DELETE') {
                     setBookmarks((prev) => prev.filter(b => b.id !== payload.old.id))
-                } 
+                }
                 else if (payload.eventType === 'UPDATE') {
                     setBookmarks((prev) =>
                         prev.map((b) => (b.id === payload.new.id ? (payload.new as Bookmark) : b))
@@ -62,20 +65,20 @@ export default function BookmarkManager({user}:{user:User}){
     const addBookmark = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!title || !url) return
-        
+
         await supabase.from('bookmarks').insert({ title, url, user_id: user.id })
-        
+
         setTitle('')
         setUrl('')
     }
 
     const deleteBookmark = async (id: string) => {
         setBookmarks((prev) => prev.filter((b) => b.id !== id))
-            const { error } = await supabase
+        const { error } = await supabase
             .from('bookmarks')
             .delete()
             .eq('id', id)
-    
+
         if (error) {
             console.error("Error deleting:", error.message)
         }
@@ -95,7 +98,7 @@ export default function BookmarkManager({user}:{user:User}){
         if (error) {
             console.error("❌ Update Error:", error.message)
             alert("Error saving edit: " + error.message)
-            return 
+            return
         }
         setBookmarks((prev) =>
             prev.map((b) => (b.id === id ? { ...b, title: editTitle, url: editUrl } : b))
@@ -124,7 +127,7 @@ export default function BookmarkManager({user}:{user:User}){
             <ul className="space-y-2">
                 {bookmarks.map(b => (
                     <li key={b.id} className="bg-white p-4 rounded shadow flex justify-between items-center gap-4">
-                        
+
                         {editingId === b.id ? (
                             <div className="flex-1 flex gap-2 w-full">
                                 <input
