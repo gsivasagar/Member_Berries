@@ -30,40 +30,55 @@ export default function BookmarkManager({user}:{user:User}){
 
     useEffect(() => {
         const channel = supabase
-        .channel('realtime bookmarks')
-        .on('postgres_changes',{
-            event:'*',
-            schema:'public',
-            table:'bookmarks',
-            filter:`user_id=eq.${user.id}`
-        },(payload)=>{
-            if(payload.eventType === 'INSERT'){
-                setBookmarks((prev)=>[payload.new as Bookmark, ...prev])
-            }else if(payload.eventType === 'DELETE'){
-                setBookmarks((prev)=>prev.filter(b=>b.id!==payload.old.id))
-            }
-        })
-        .subscribe()
-        return ()=> {supabase.removeChannel(channel)}
-    },[supabase,user.id])
+            .channel('realtime bookmarks')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'bookmarks',
+                filter: `user_id=eq.${user.id}`
+            }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setBookmarks((prev) => {
+                        const alreadyExists = prev.some(b => b.id === payload.new.id)
+                        if (alreadyExists) {
+                            return prev 
+                        }
+                        return [payload.new as Bookmark, ...prev]
+                    })
+                } 
+                else if (payload.eventType === 'DELETE') {
+                    setBookmarks((prev) => prev.filter(b => b.id !== payload.old.id))
+                } 
+                else if (payload.eventType === 'UPDATE') {
+                    setBookmarks((prev) =>
+                        prev.map((b) => (b.id === payload.new.id ? (payload.new as Bookmark) : b))
+                    )
+                }
+            })
+            .subscribe()
+        return () => { supabase.removeChannel(channel) }
+    }, [supabase, user.id])
 
     const addBookmark = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!title || !url) return
-        const { error } = await supabase
-            .from('bookmarks')
-            .insert({ title, url, user_id: user.id })
-        if (error) {
-            console.error("❌ Insert Error:", error.message)
-            alert("Error adding bookmark: " + error.message)
-            return
-        }
+        
+        await supabase.from('bookmarks').insert({ title, url, user_id: user.id })
+        
         setTitle('')
         setUrl('')
     }
 
-    const deleteBookmark = async(id:string)=>{
-        await supabase.from('bookmarks').delete().eq('id',id)
+    const deleteBookmark = async (id: string) => {
+        setBookmarks((prev) => prev.filter((b) => b.id !== id))
+            const { error } = await supabase
+            .from('bookmarks')
+            .delete()
+            .eq('id', id)
+    
+        if (error) {
+            console.error("Error deleting:", error.message)
+        }
     }
 
     const startEditing = (b: Bookmark) => {
