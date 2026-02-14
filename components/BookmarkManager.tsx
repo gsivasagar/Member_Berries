@@ -18,6 +18,9 @@ export default function BookmarkManager({ user }: { user: User }) {
     const [editTitle, setEditTitle] = useState('')
     const [editUrl, setEditUrl] = useState('')
 
+    const [urlError, setUrlError] = useState(false)
+    const [editUrlError, setEditUrlError] = useState(false)
+
     const fetchBookmarks = useCallback(async () => {
         const { data } = await supabase.from('bookmarks').select('*').order('created_at', { ascending: false })
         if (data) {
@@ -75,10 +78,10 @@ export default function BookmarkManager({ user }: { user: User }) {
         e.preventDefault()
         if (!title || !url) return
 
-        if (!isValidUrl(url)) {
-            alert("Please enter a valid URL (e.g., https://example.com)")
-            return
-        }
+        // if (!isValidUrl(url)) {
+        //     alert("Please enter a valid URL (e.g., https://example.com)")
+        //     return
+        // }
 
         await supabase.from('bookmarks').insert({ title, url, user_id: user.id })
 
@@ -135,12 +138,20 @@ export default function BookmarkManager({ user }: { user: User }) {
                     onChange={e => setTitle(e.target.value)}
                 />
                 <input
-                    className="border p-2 rounded flex-1 text-black placeholder-black"
+                    className={`border p-2 rounded flex-1 placeholder-gray-500 ${urlError
+                        ? 'border-red-500 bg-red-50 text-red-900 placeholder-red-300'
+                        : 'border-gray-300 text-black'
+                        }`}
                     placeholder="URL"
                     value={url}
-                    onChange={e => setUrl(e.target.value)}
+                    onChange={e => {
+                        setUrl(e.target.value)
+                        setUrlError(!isValidUrl(url))
+                    }}
                 />
-                <button className="bg-green-600 text-white px-4 rounded hover:bg-green-700">Add</button>
+                <button className="bg-green-600 text-white px-4 rounded hover:bg-green-700"
+                    disabled={urlError}
+                >Add</button>
             </form>
 
             <ul className="space-y-2">
@@ -155,9 +166,15 @@ export default function BookmarkManager({ user }: { user: User }) {
                                     onChange={(e) => setEditTitle(e.target.value)}
                                 />
                                 <input
-                                    className="border p-2 rounded flex-1 text-black"
+                                    className={`border p-2 rounded flex-1 ${editUrlError
+                                        ? 'border-red-500 bg-red-50 text-red-900'
+                                        : 'border-gray-300 text-black'
+                                        }`}
                                     value={editUrl}
-                                    onChange={(e) => setEditUrl(e.target.value)}
+                                    onChange={(e) => {
+                                        setEditUrl(e.target.value)
+                                        setEditUrlError(false)
+                                    }}
                                 />
                                 <button onClick={() => saveEdit(b.id)} className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">
                                     Save
