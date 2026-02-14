@@ -17,8 +17,6 @@ export default async function Home() {
         <h1 className="text-2xl font-bold text-black">Member Berries</h1>
         <div className="flex gap-4 items-center">
           <span className="text-sm text-black">{user.email}</span>
-
-          {/* Logout Button Form */}
           <form action={signOut}>
             <button
               type="submit"

@@ -62,9 +62,23 @@ export default function BookmarkManager({ user }: { user: User }) {
         return () => { supabase.removeChannel(channel) }
     }, [supabase, user.id])
 
+    const isValidUrl = (urlString: string) => {
+        try {
+            new URL(urlString);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
     const addBookmark = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!title || !url) return
+
+        if (!isValidUrl(url)) {
+            alert("Please enter a valid URL (e.g., https://example.com)")
+            return
+        }
 
         await supabase.from('bookmarks').insert({ title, url, user_id: user.id })
 
@@ -91,6 +105,11 @@ export default function BookmarkManager({ user }: { user: User }) {
     }
 
     const saveEdit = async (id: string) => {
+        if (!isValidUrl(editUrl)) {
+            alert("Please enter a valid URL (e.g., https://example.com)")
+            return
+        }
+
         const { error } = await supabase
             .from('bookmarks')
             .update({ title: editTitle, url: editUrl })
