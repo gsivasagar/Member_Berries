@@ -18,7 +18,7 @@ export default function LoginPage() {
             <div className="sm:mx-auto sm:w-full sm:max-w-sm">
                 <img
                     className="mx-auto h-32 w-auto animate-bounce"
-                    // src="https://upload.wikimedia.org/wikipedia/en/3/36/Member_Berries.jpg"
+                    src="/member-berries.png"
                     alt="Member Berries"
                 />
                 <h2 className="mt-10 text-center text-2xl/9 font-bold tracking-tight text-white">
