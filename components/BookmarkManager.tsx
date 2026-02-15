@@ -3,9 +3,18 @@
 import { createClient } from "@/lib/supabase/client"
 import { useEffect, useState, useCallback } from "react"
 import { User } from '@supabase/supabase-js'
+import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
+import { TrashIcon, PencilIcon, XMarkIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline'
+import DashboardShell from '@/components/DashboardShell'
 
 type Bookmark = {
-    id: string; title: string; url: string; user_id: string
+    id: string; title: string; url: string; user_id: string; category: string | null
+}
+
+type CategoryGroup = {
+    name: string;
+    bookmarks: Bookmark[];
+    isOpen: boolean;
 }
 
 export default function BookmarkManager({ user }: { user: User }) {
@@ -13,13 +22,32 @@ export default function BookmarkManager({ user }: { user: User }) {
     const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
     const [title, setTitle] = useState('')
     const [url, setUrl] = useState('')
+    const [category, setCategory] = useState('')
+    const [searchQuery, setSearchQuery] = useState('')
+
+    const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
+
+    const [selectedBookmarks, setSelectedBookmarks] = useState<Set<string>>(new Set())
 
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editTitle, setEditTitle] = useState('')
     const [editUrl, setEditUrl] = useState('')
+    const [editCategory, setEditCategory] = useState('')
 
     const [urlError, setUrlError] = useState(false)
+
     const [editUrlError, setEditUrlError] = useState(false)
+
+    // Notification state
+    const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
+
+    useEffect(() => {
+        if (notification) {
+            const timer = setTimeout(() => setNotification(null), 3000)
+            return () => clearTimeout(timer)
+        }
+    }, [notification])
+
 
     const fetchBookmarks = useCallback(async () => {
         const { data } = await supabase.from('bookmarks').select('*').order('created_at', { ascending: false })
@@ -33,6 +61,22 @@ export default function BookmarkManager({ user }: { user: User }) {
         const interval = setInterval(fetchBookmarks, 5000)
         return () => clearInterval(interval)
     }, [fetchBookmarks])
+
+    // Update expanded state when new categories appear
+    useEffect(() => {
+        if (bookmarks.length > 0) {
+            setExpandedCategories(prev => {
+                const uniqueCategories = Array.from(new Set(bookmarks.map(b => b.category || 'Uncategorized')))
+                const newState = { ...prev }
+                uniqueCategories.forEach(cat => {
+                    if (newState[cat] === undefined) {
+                        newState[cat] = true
+                    }
+                })
+                return newState
+            })
+        }
+    }, [bookmarks])
 
     useEffect(() => {
         const channel = supabase
@@ -54,6 +98,11 @@ export default function BookmarkManager({ user }: { user: User }) {
                 }
                 else if (payload.eventType === 'DELETE') {
                     setBookmarks((prev) => prev.filter(b => b.id !== payload.old.id))
+                    setSelectedBookmarks(prev => {
+                        const newSet = new Set(prev)
+                        newSet.delete(payload.old.id)
+                        return newSet
+                    })
                 }
                 else if (payload.eventType === 'UPDATE') {
                     setBookmarks((prev) =>
@@ -78,28 +127,43 @@ export default function BookmarkManager({ user }: { user: User }) {
         e.preventDefault()
         if (!title || !url) return
 
-        // Optimistic update
-        const tempId = Math.random().toString(36).substr(2, 9)
-        const newBookmark: Bookmark = { id: tempId, title, url, user_id: user.id }
-        setBookmarks((prev) => [newBookmark, ...prev])
+        const isDuplicate = bookmarks.some(b =>
+            b.title.toLowerCase() === title.toLowerCase() &&
+            (b.category || '').toLowerCase() === category.toLowerCase()
+        )
 
-        const { data, error } = await supabase.from('bookmarks').insert({ title, url, user_id: user.id }).select()
+        if (isDuplicate) {
+            setNotification({ message: "A bookmark with this title already exists in this category", type: 'error' })
+            return
+        }
+
+        const tempId = Math.random().toString(36).substr(2, 9)
+        const newBookmark: Bookmark = { id: tempId, title, url, user_id: user.id, category: category || null }
+        setBookmarks((prev) => [newBookmark, ...prev])
+        setNotification({ message: "Bookmark added successfully", type: 'success' })
+
+        const { data, error } = await supabase.from('bookmarks').insert({ title, url, user_id: user.id, category: category || null }).select()
 
         if (error) {
             console.error(error)
-            // Revert on error
             setBookmarks((prev) => prev.filter(b => b.id !== tempId))
+            setNotification({ message: "Failed to add bookmark", type: 'error' })
         } else if (data) {
-            // Replace temp ID with real ID from server
             setBookmarks((prev) => prev.map(b => b.id === tempId ? data[0] : b))
         }
 
         setTitle('')
         setUrl('')
+        setCategory('')
     }
 
     const deleteBookmark = async (id: string) => {
         setBookmarks((prev) => prev.filter((b) => b.id !== id))
+        setSelectedBookmarks(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(id)
+            return newSet
+        })
         const { error } = await supabase
             .from('bookmarks')
             .delete()
@@ -110,10 +174,43 @@ export default function BookmarkManager({ user }: { user: User }) {
         }
     }
 
+    const toggleSelection = (id: string) => {
+        setSelectedBookmarks(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(id)) {
+                newSet.delete(id)
+            } else {
+                newSet.add(id)
+            }
+            return newSet
+        })
+    }
+
+    const deleteSelected = async () => {
+        const idsToDelete = Array.from(selectedBookmarks)
+        if (idsToDelete.length === 0) return
+
+        setBookmarks(prev => prev.filter(b => !selectedBookmarks.has(b.id)))
+        setSelectedBookmarks(new Set())
+        setNotification({ message: `Deleted ${idsToDelete.length} bookmarks`, type: 'success' })
+
+        const { error } = await supabase
+            .from('bookmarks')
+            .delete()
+            .in('id', idsToDelete)
+
+        if (error) {
+            console.error("Error deleting selected:", error.message)
+            setNotification({ message: "Failed to delete bookmarks", type: 'error' })
+            fetchBookmarks()
+        }
+    }
+
     const startEditing = (b: Bookmark) => {
         setEditingId(b.id)
         setEditTitle(b.title)
         setEditUrl(b.url)
+        setEditCategory(b.category || '')
     }
 
     const saveEdit = async (id: string) => {
@@ -124,7 +221,7 @@ export default function BookmarkManager({ user }: { user: User }) {
 
         const { error } = await supabase
             .from('bookmarks')
-            .update({ title: editTitle, url: editUrl })
+            .update({ title: editTitle, url: editUrl, category: editCategory || null })
             .eq('id', id)
         if (error) {
             console.error("Update Error:", error.message)
@@ -132,24 +229,64 @@ export default function BookmarkManager({ user }: { user: User }) {
             return
         }
         setBookmarks((prev) =>
-            prev.map((b) => (b.id === id ? { ...b, title: editTitle, url: editUrl } : b))
+            prev.map((b) => (b.id === id ? { ...b, title: editTitle, url: editUrl, category: editCategory || null } : b))
         )
         setEditingId(null)
     }
 
-    return (
-        <div className="max-w-2xl mx-auto p-4">
-            <form onSubmit={addBookmark} className="bg-white p-6 rounded shadow mb-6 flex gap-2">
+    const toggleCategory = (categoryName: string) => {
+        setExpandedCategories(prev => ({
+            ...prev,
+            [categoryName]: !prev[categoryName]
+        }))
+    }
+
+    const filteredBookmarks = bookmarks.filter(b =>
+        b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        b.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (b.category && b.category.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+
+    const groupedBookmarks: Record<string, Bookmark[]> = filteredBookmarks.reduce((groups, bookmark) => {
+        const cat = bookmark.category || 'Uncategorized';
+        if (!groups[cat]) {
+            groups[cat] = [];
+        }
+        groups[cat].push(bookmark);
+        return groups;
+    }, {} as Record<string, Bookmark[]>);
+
+    const sortedCategories = Object.keys(groupedBookmarks).sort();
+
+    const headerContent = (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center w-full">
+            <div className="relative w-full">
                 <input
-                    className="border p-2 rounded flex-1 text-black placeholder-black"
+                    type="text"
+                    className="block w-full rounded-md border-0 bg-white py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 text-center"
+                    placeholder="Search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
+            <form onSubmit={addBookmark} className="contents">
+                <input
+                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 text-center"
+                    placeholder="Category"
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}
+                />
+                <input
+                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6 text-center"
                     placeholder="Title"
                     value={title}
                     onChange={e => setTitle(e.target.value)}
                 />
                 <input
-                    className={`border p-2 rounded flex-1 placeholder-gray-500 ${urlError
-                        ? 'border-red-500 bg-red-50 text-red-900 placeholder-red-300'
-                        : 'border-gray-300 text-black'
+                    className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm/6 text-center ${urlError
+                        ? 'ring-red-300 focus:ring-red-500 bg-red-50 text-red-900'
+                        : 'ring-gray-300 focus:ring-indigo-600'
                         }`}
                     placeholder="URL"
                     value={url}
@@ -158,59 +295,201 @@ export default function BookmarkManager({ user }: { user: User }) {
                         setUrlError(!isValidUrl(e.target.value))
                     }}
                 />
-                <button className="bg-green-600 text-white px-4 rounded hover:bg-green-700"
-                    disabled={urlError}
-                >Add</button>
+                <button
+                    className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    disabled={urlError || !title || !url}
+                >
+                    Add
+                </button>
             </form>
+        </div>
+    )
 
-            <ul className="space-y-2">
-                {bookmarks.map(b => (
-                    <li key={b.id} className="bg-white p-4 rounded shadow flex justify-between items-center gap-4">
+    const toggleCategorySelection = (cat: string) => {
+        const categoryBookmarks = groupedBookmarks[cat]
+        const allSelected = categoryBookmarks.every(b => selectedBookmarks.has(b.id))
 
-                        {editingId === b.id ? (
-                            <div className="flex-1 flex gap-2 w-full">
+        setSelectedBookmarks(prev => {
+            const newSet = new Set(prev)
+            if (allSelected) {
+                categoryBookmarks.forEach(b => newSet.delete(b.id))
+            } else {
+                categoryBookmarks.forEach(b => newSet.add(b.id))
+            }
+            return newSet
+        })
+    }
+
+    return (
+        <DashboardShell user={user} headerContent={headerContent}>
+            {notification && (
+                <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out ${notification.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+                    }`}>
+                    {notification.type === 'success' ? (
+                        <CheckCircleIcon className="size-5 text-green-500" />
+                    ) : (
+                        <ExclamationCircleIcon className="size-5 text-red-500" />
+                    )}
+                    <span className="font-medium text-sm">{notification.message}</span>
+                    <button onClick={() => setNotification(null)} className="ml-2 text-gray-400 hover:text-gray-600">
+                        <XMarkIcon className="size-4" />
+                    </button>
+                </div>
+            )}
+            <div className="max-w-7xl mx-auto p-4 space-y-6">
+
+
+
+                <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm border border-gray-100 mb-6">
+                    <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                                checked={bookmarks.length > 0 && selectedBookmarks.size === bookmarks.length}
+                                onChange={(e) => {
+                                    if (e.target.checked) {
+                                        setSelectedBookmarks(new Set(bookmarks.map(b => b.id)))
+                                    } else {
+                                        setSelectedBookmarks(new Set())
+                                    }
+                                }}
+                            />
+                            <span className="text-sm font-medium text-gray-700">Select All</span>
+                        </label>
+
+
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500 mr-2">{selectedBookmarks.size} selected</span>
+                        <button
+                            onClick={deleteSelected}
+                            title="Delete Selected"
+                            className="flex items-center justify-center rounded-md bg-red-50 p-2 text-red-600 shadow-sm hover:bg-red-100 ring-1 ring-inset ring-red-100 transition-colors"
+                        >
+                            <TrashIcon className="size-5" />
+                        </button>
+                    </div>
+                </div>
+
+                {sortedCategories.map(cat => (
+                    <div key={cat} className="mb-8">
+                        <div className="flex items-center justify-between p-2 mb-4 hover:bg-gray-100 rounded transition-colors group">
+                            <div className="flex items-center gap-3 w-full">
                                 <input
-                                    className="border p-2 rounded flex-1 text-black"
-                                    value={editTitle}
-                                    onChange={(e) => setEditTitle(e.target.value)}
+                                    type="checkbox"
+                                    className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                                    checked={groupedBookmarks[cat].every(b => selectedBookmarks.has(b.id))}
+                                    onChange={() => toggleCategorySelection(cat)}
+                                    onClick={(e) => e.stopPropagation()}
                                 />
-                                <input
-                                    className={`border p-2 rounded flex-1 ${editUrlError
-                                        ? 'border-red-500 bg-red-50 text-red-900'
-                                        : 'border-gray-300 text-black'
-                                        }`}
-                                    value={editUrl}
-                                    onChange={(e) => {
-                                        setEditUrl(e.target.value)
-                                        setEditUrlError(false)
-                                    }}
-                                />
-                                <button onClick={() => saveEdit(b.id)} className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">
-                                    Save
-                                </button>
-                                <button onClick={() => setEditingId(null)} className="bg-gray-200 text-black px-4 py-1 rounded hover:bg-gray-300">
-                                    Cancel
+                                <button
+                                    onClick={() => toggleCategory(cat)}
+                                    className="flex-1 flex items-center justify-between focus:outline-hidden"
+                                >
+                                    <span className="font-bold text-2xl text-gray-800 flex items-center gap-2">
+                                        {cat}
+                                        <span className="text-sm font-normal text-gray-500">({groupedBookmarks[cat].length})</span>
+                                    </span>
+                                    {expandedCategories[cat] ? (
+                                        <ChevronDownIcon className="size-6 text-gray-400" />
+                                    ) : (
+                                        <ChevronRightIcon className="size-6 text-gray-400" />
+                                    )}
                                 </button>
                             </div>
-                        ) : (
-                            <>
-                                <a href={b.url} target="_blank" className="text-blue-600 font-medium hover:underline flex-1 truncate">
-                                    {b.title}
-                                </a>
-                                <div className="flex gap-4">
-                                    <button onClick={() => startEditing(b)} className="text-blue-500 hover:text-blue-700 font-medium">
-                                        Edit
-                                    </button>
-                                    <button onClick={() => deleteBookmark(b.id)} className="text-red-500 hover:text-red-700 font-medium">
-                                        Delete
-                                    </button>
-                                </div>
-                            </>
-                        )}
+                        </div>
 
-                    </li>
+                        {expandedCategories[cat] && (
+                            <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4">
+                                {groupedBookmarks[cat].map(b => (
+                                    <li key={b.id} className="relative bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
+
+                                        <div className="absolute left-0 top-0 bottom-0 w-2 bg-indigo-500 rounded-l-2xl"></div>
+
+                                        <div className="flex justify-between items-start mb-4 pl-3">
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                <input
+                                                    type="checkbox"
+                                                    className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                                                    checked={selectedBookmarks.has(b.id)}
+                                                    onChange={() => toggleSelection(b.id)}
+                                                />
+                                                {editingId === b.id ? (
+                                                    <div className="flex flex-col gap-2 w-full">
+                                                        <input
+                                                            className="border p-2 rounded text-black text-sm w-full"
+                                                            value={editTitle}
+                                                            onChange={(e) => setEditTitle(e.target.value)}
+                                                            placeholder="Title"
+                                                        />
+                                                        <input
+                                                            className={`border p-2 rounded text-sm w-full ${editUrlError
+                                                                ? 'border-red-500 bg-red-50 text-red-900'
+                                                                : 'border-gray-300 text-black'
+                                                                }`}
+                                                            value={editUrl}
+                                                            onChange={(e) => {
+                                                                setEditUrl(e.target.value)
+                                                                setEditUrlError(false)
+                                                            }}
+                                                            placeholder="URL"
+                                                        />
+                                                        <input
+                                                            className="border p-2 rounded text-black text-sm w-full"
+                                                            value={editCategory}
+                                                            onChange={(e) => setEditCategory(e.target.value)}
+                                                            placeholder="Category"
+                                                        />
+                                                        <div className="flex gap-2 mt-2">
+                                                            <button onClick={() => saveEdit(b.id)} className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">
+                                                                Save
+                                                            </button>
+                                                            <button onClick={() => setEditingId(null)} className="bg-gray-200 text-black px-3 py-1 rounded text-xs hover:bg-gray-300">
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <h3 className="text-xl font-bold text-gray-800 truncate" title={b.title}>
+                                                        {b.title}
+                                                    </h3>
+                                                )}
+                                            </div>
+
+                                            {!editingId && (
+                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => startEditing(b)} className="text-gray-400 hover:text-indigo-600 p-1" title="Edit">
+                                                        <PencilIcon className="size-5" />
+                                                    </button>
+                                                    <button onClick={() => deleteBookmark(b.id)} className="text-gray-400 hover:text-red-500 p-1" title="Delete">
+                                                        <TrashIcon className="size-5" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {!editingId && (
+                                            <div className="pl-3 mt-2">
+                                                <a href={b.url} target="_blank" className="text-indigo-600 text-sm hover:underline block truncate" title={b.url}>
+                                                    {b.url}
+                                                </a>
+                                            </div>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 ))}
-            </ul>
-        </div>
+
+                {sortedCategories.length === 0 && (
+                    <div className="text-center text-gray-500 py-10">
+                        No bookmarks found. Add one above!
+                    </div>
+                )}
+            </div>
+        </DashboardShell>
     )
 }

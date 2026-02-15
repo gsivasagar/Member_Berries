@@ -14,8 +14,6 @@ export default async function Home() {
   }
 
   return (
-    <DashboardShell user={user}>
-      <BookmarkManager user={user} />
-    </DashboardShell>
+    <BookmarkManager user={user} />
   )
 }
