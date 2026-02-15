@@ -1,14 +1,19 @@
 # Smart Bookmark App (MemberBerries)
 
-A real-time bookmark manager built with Next.js, Supabase, and Tailwind CSS. Authenticated users can save, categorize, and manage their bookmarks with a responsive and modern UI.
+A real-time bookmark manager built with **Next.js 16**, **Supabase**, and **Tailwind CSS**. Authenticated users can save, categorize, and manage their bookmarks with a premium, dark-themed UI.
 
-## Features
+![MemberBerries Logo](/public/logo.svg)
 
-- **Google Authentication**: Secure sign-up and login via Supabase Auth (Google OAuth).
-- **Real-time Updates**: Bookmarks list updates instantly across tabs and devices without refreshing.
-- **Categorization**: Organize bookmarks into expandable categories.
-- **Responsive Design**: Mobile-friendly interface with a sidebar layout.
-- **Privacy**: specific Row Level Security (RLS) policies ensure users only see their own bookmarks.
+## Features (v2.2.1)
+
+- **Dark Sidebar Layout**: A modern, fixed sidebar navigation with a unified dark theme (`Slate 900`).
+- **Real-time Updates**: Bookmarks sync instantly across devices using Supabase Realtime.
+- **Enhanced Management**:
+    -   **Categorization**: Organize bookmarks into custom categories.
+    -   **Search & Filter**: Instantly filter bookmarks by title, URL, or category.
+    -   **Bulk Actions**: Select multiple bookmarks to delete in batches.
+- **Secure Authentication**: Google OAuth sign-in via Supabase Auth.
+- **Responsive Design**: Fully responsive grid layout optimized for all screen sizes.
 
 ## Tech Stack
 
@@ -16,19 +21,16 @@ A real-time bookmark manager built with Next.js, Supabase, and Tailwind CSS. Aut
 - **Backend**: Supabase (PostgreSQL, Auth, Realtime)
 - **Deployment**: Vercel
 
-## Challenges & Solutions
+## Recent Updates
 
-### 1. Vercel Deployment Updates
-**Problem:** After deploying updates, the live site seemed stuck on an old version.
-**Solution:** I realized I was visiting an *immutable deployment URL* (a snapshot of a specific commit) rather than the main *production domain*. I fixed this by ensuring I always accessed the main `.vercel.app` domain and updated my bookmark/redirects accordingly.
+### v2.2.1 (Current)
+- **UI Polish**: Removed footer for a cleaner look.
+- **Refinement**: Smaller, transparent checkboxes for better aesthetics.
 
-### 2. Real-time Synchronization
-**Problem:** When a bookmark was added in one tab, it didn't appear in another tab without a manual refresh.
-**Solution:** I implemented Supabase Realtime subscriptions using the `postgres_changes` channel. The app now listens for `INSERT`, `UPDATE`, and `DELETE` events on the `bookmarks` table and updates the local state immediately.
-
-### 3. Database Schema Evolution
-**Problem:** Adding categories failed initially because the database table lacked the necessary column.
-**Solution:** I updated the Supabase database schema by running an SQL migration: `ALTER TABLE bookmarks ADD COLUMN category text;`.
+### v2.2.0
+- **Dark Mode**: Complete overhaul of the UI to a dark theme.
+- **Sidebar Navigation**: Replaced top navbar with a persistent left sidebar.
+- **Tooling**: Moved search and add functionalities to a dedicated toolbar.
 
 ## Getting Started
 
