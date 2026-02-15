@@ -19,7 +19,7 @@ export default function LoginPage() {
                 <div className="mx-auto h-24 w-24 bg-indigo-100 rounded-full flex items-center justify-center animate-bounce shadow-md">
                 </div>
                 <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-                    Welcome Back
+                    Welcome
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-600">
                     Sign in to manage your bookmarks
@@ -35,17 +35,6 @@ export default function LoginPage() {
                     >
                         Sign in with Google
                     </button>
-
-                    <div className="mt-6">
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-200" />
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="bg-white px-2 text-gray-500">Secure Access</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

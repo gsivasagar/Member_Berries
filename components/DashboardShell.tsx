@@ -116,6 +116,11 @@ export default function DashboardShell({ user, children, headerContent }: { user
                     {children}
                 </div>
             </main>
+            <footer className="bg-white border-t border-gray-200 mt-auto">
+                <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex justify-center text-sm text-gray-500">
+                    v2.0.1
+                </div>
+            </footer>
         </div>
     )
 }
