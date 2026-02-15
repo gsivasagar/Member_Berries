@@ -21,16 +21,32 @@ A real-time bookmark manager built with **Next.js 16**, **Supabase**, and **Tail
 - **Backend**: Supabase (PostgreSQL, Auth, Realtime)
 - **Deployment**: Vercel
 
-## Recent Updates
+## Challenges & Solutions
 
-### v2.2.1 (Current)
-- **UI Polish**: Removed footer for a cleaner look.
-- **Refinement**: Smaller, transparent checkboxes for better aesthetics.
+### 1. Vercel Deployment Updates
+**Problem:** After deploying updates, the live site seemed stuck on an old version.
+**Solution:** I realized I was visiting an *immutable deployment URL* (a snapshot of a specific commit) rather than the main *production domain*. I fixed this by ensuring I always accessed the main `.vercel.app` domain and updated my bookmark/redirects accordingly.
 
-### v2.2.0
-- **Dark Mode**: Complete overhaul of the UI to a dark theme.
-- **Sidebar Navigation**: Replaced top navbar with a persistent left sidebar.
-- **Tooling**: Moved search and add functionalities to a dedicated toolbar.
+### 2. Real-time Synchronization
+**Problem:** When a bookmark was added in one tab, it didn't appear in another tab without a manual refresh.
+**Solution:** I implemented **Supabase Realtime** subscriptions using the `postgres_changes` channel. The app now listens for `INSERT`, `UPDATE`, and `DELETE` events on the `bookmarks` table and updates the local React state immediately, ensuring a seamless experience across devices.
+
+### 3. Database Schema Evolution
+**Problem:** Adding categories initially failed because the database table lacked the necessary column, and Supabase is a relational database requiring strict schema definitions.
+**Solution:** I updated the Supabase database schema by running an SQL migration: `ALTER TABLE bookmarks ADD COLUMN category text;`. This allowed the new category feature to function correctly without data loss.
+
+### 4. Implementing Dark Mode Sidebar (V3)
+**Problem:** The user requested a complete UI overhaul to a "Dark Sidebar" layout, which required shifting from a top-navbar structure to a fixed-sidebar one and inverting the color scheme.
+**Solution:** 
+-   **Layout**: I refactored `DashboardShell` to use a fixed `aside` for navigation and a scrollable `main` area.
+-   **Theming**: I updated `globals.css` with new dark theme variables and rigorously updated all Tailwind classes in `BookmarkManager`, `LoginPage`, and `DashboardShell` to use `bg-slate-900`, `text-white`, and `border-white/5` for a premium dark aesthetic.
+-   **Tooling**: I consolidated the Search and Add functionalities into a new "Toolbar" component within the main content area to keep the sidebar clean for navigation.
+
+### 5. Infinite Loops & Build Errors
+**Problem:** During refactoring, I encountered infinite loops in the `useEffect` for fetching bookmarks and build errors due to missing imports (`FolderIcon`).
+**Solution:** 
+-   I optimized the `fetchBookmarks` dependency array to prevent unnecessary re-renders.
+-   I ran a strict linting check, removing unused variables and ensuring all Heroicons were correctly imported before finalizing the build.
 
 ## Getting Started
 
