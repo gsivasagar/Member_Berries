@@ -4,21 +4,23 @@ A real-time bookmark manager built with **Next.js 16**, **Supabase**, and **Tail
 
 ![MemberBerries Logo](/public/logo.svg)
 
-## Features (v2.2.1)
+## Features (v3.0)
 
 - **Dark Sidebar Layout**: A modern, fixed sidebar navigation with a unified dark theme (`Slate 900`).
 - **Real-time Updates**: Bookmarks sync instantly across devices using Supabase Realtime.
 - **Enhanced Management**:
-    -   **Categorization**: Organize bookmarks into custom categories.
+    -   **Categorization**: Organize bookmarks into custom categories with a toggleable input.
     -   **Search & Filter**: Instantly filter bookmarks by title, URL, or category.
     -   **Bulk Actions**: Select multiple bookmarks to delete in batches.
+-   **Smart Previews**: Automatically fetches and displays link previews (Open Graph images/titles).
+-   **User Profile**: specific Google profile picture displayed in the sidebar.
 - **Secure Authentication**: Google OAuth sign-in via Supabase Auth.
 - **Responsive Design**: Fully responsive grid layout optimized for all screen sizes.
 
 ## Tech Stack
 
 - **Frontend**: Next.js 16 (App Router), React, Tailwind CSS
-- **Backend**: Supabase (PostgreSQL, Auth, Realtime)
+- **Backend**: Supabase (PostgreSQL, Auth, Realtime), Edge Functions
 - **Deployment**: Vercel
 
 ## Challenges & Solutions
@@ -48,17 +50,10 @@ A real-time bookmark manager built with **Next.js 16**, **Supabase**, and **Tail
 -   I optimized the `fetchBookmarks` dependency array to prevent unnecessary re-renders.
 -   I ran a strict linting check, removing unused variables and ensuring all Heroicons were correctly imported before finalizing the build.
 
-## Getting Started
+### 6. Next.js Image Optimization
+**Problem:** The app crashed with a "hostname is not configured" error when trying to display the user's Google profile picture.
+**Solution:** I updated `next.config.ts` to include `lh3.googleusercontent.com` in the `images.remotePatterns` allows list, enabling Next.js to safely optimize and serve these external images.
 
-1.  Clone the repository.
-2.  Install dependencies: `npm install`
-3.  Set up environment variables in `.env.local`:
-    ```env
-    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-    ```
-4.  Run the development server: `npm run dev`
-
-## Deployment
-
-Deployed live on Vercel: [https://member-berries.vercel.app](https://member-berries.vercel.app)
+### 7. Edit Functionality Conflicts
+**Problem:** Edited bookmarks would sometimes "revert" to their old values immediately after saving.
+**Solution:** I diagnosed this as a race condition between the periodic polling (`setInterval`) and the local state update. I removed the polling mechanism entirely and relied on **Optimistic Updates** (updating UI immediately) combined with **Supabase Realtime** to keep the data fresh without conflicts.

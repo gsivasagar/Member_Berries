@@ -51,8 +51,6 @@ export default function BookmarkManager({ user }: { user: User }) {
 
     useEffect(() => {
         fetchBookmarks()
-        const interval = setInterval(fetchBookmarks, 5000)
-        return () => clearInterval(interval)
     }, [fetchBookmarks])
 
     useEffect(() => {
@@ -197,19 +195,32 @@ export default function BookmarkManager({ user }: { user: User }) {
             return
         }
 
-        const { error } = await supabase
-            .from('bookmarks')
-            .update({ title: editTitle, url: editUrl, category: editCategory || null })
-            .eq('id', id)
-        if (error) {
-            console.error("Update Error:", error.message)
-            alert("Error saving edit: " + error.message)
-            return
-        }
+        // Optimistic update
+        const originalBookmarks = [...bookmarks]
         setBookmarks((prev) =>
             prev.map((b) => (b.id === id ? { ...b, title: editTitle, url: editUrl, category: editCategory || null } : b))
         )
         setEditingId(null)
+
+        const { data, error } = await supabase
+            .from('bookmarks')
+            .update({ title: editTitle, url: editUrl, category: editCategory || null })
+            .eq('id', id)
+            .select()
+
+        if (error) {
+            console.error("Update Error:", error.message)
+            alert("Error saving edit: " + error.message)
+            setBookmarks(originalBookmarks) // Revert on error
+            return
+        }
+
+        // Update with actual data from server to ensure consistency
+        if (data && data.length > 0) {
+            setBookmarks((prev) =>
+                prev.map((b) => (b.id === id ? (data[0] as Bookmark) : b))
+            )
+        }
     }
 
     // Calculate categories dynamically
