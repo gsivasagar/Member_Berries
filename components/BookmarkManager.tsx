@@ -363,7 +363,7 @@ export default function BookmarkManager({ user }: { user: User }) {
                                 type="checkbox"
                                 checked={selectedBookmarks.has(b.id)}
                                 onChange={() => toggleSelection(b.id)}
-                                className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-gray-900 cursor-pointer"
+                                className="h-4 w-4 rounded border-gray-600/50 bg-gray-700/20 text-indigo-500 focus:ring-indigo-500/30 focus:ring-offset-0 focus:ring-1 checked:bg-indigo-500 checked:border-indigo-500 transition-all duration-200 cursor-pointer hover:border-indigo-500/50"
                             />
                         </div>
 
@@ -406,7 +406,7 @@ export default function BookmarkManager({ user }: { user: User }) {
 
             {displayedBookmarks.length === 0 && (
                 <div className="text-center py-20">
-                    <div className="mx-auto h-24 w-24 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+                    <div className="mx-auto h-17 w-17 rounded-full bg-gray-800 flex items-center justify-center mb-4">
                         <FolderIcon className="h-10 w-10 text-gray-600" />
                     </div>
                     <h3 className="mt-2 text-sm font-semibold text-white">No bookmarks found</h3>
