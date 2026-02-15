@@ -1,4 +1,6 @@
 'use client'
+
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -14,20 +16,27 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="flex min-h-screen flex-col justify-center px-6 py-12 lg:px-8 bg-gray-50">
+        <div className="flex min-h-screen flex-col justify-center px-6 py-12 lg:px-8 bg-slate-900">
             <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-                <div className="mx-auto h-24 w-24 bg-indigo-100 rounded-full flex items-center justify-center animate-bounce shadow-md">
+                <div className="flex justify-center mb-4">
+                    <Image
+                        src="/logo.svg"
+                        alt="Member Berries"
+                        width={100}
+                        height={100}
+                        className="animate-bounce drop-shadow-md rounded-full bg-indigo-500 p-2"
+                    />
                 </div>
-                <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+                <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-white">
                     Welcome
                 </h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
+                <p className="mt-2 text-center text-sm text-gray-400">
                     Sign in to manage your bookmarks
                 </p>
             </div>
 
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-                <div className="bg-white py-8 px-8 shadow rounded-lg border border-gray-100">
+                <div className="bg-gray-800 py-8 px-8 shadow rounded-lg border border-gray-700">
                     <button
                         onClick={handleLogin}
                         type="button"

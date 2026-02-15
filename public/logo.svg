@@ -1,0 +1,22 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Berry Body -->
+  <circle cx="100" cy="100" r="90" fill="#9F7AEA" stroke="#6B46C1" stroke-width="4"/>
+  
+  <!-- Shadow/Texture -->
+  <path d="M110 30 Q150 30 170 70" stroke="#B794F4" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
+  
+  <!-- Eyes -->
+  <circle cx="70" cy="90" r="10" fill="black"/>
+  <circle cx="130" cy="90" r="10" fill="black"/>
+  
+  <!-- Shine in Eyes -->
+  <circle cx="73" cy="87" r="3" fill="white"/>
+  <circle cx="133" cy="87" r="3" fill="white"/>
+
+  <!-- Mouth -->
+  <path d="M85 130 Q100 145 115 130" stroke="black" stroke-width="4" stroke-linecap="round" fill="none"/>
+
+  <!-- Blush (optional) -->
+  <ellipse cx="60" cy="110" rx="8" ry="4" fill="#E9D8FD" opacity="0.5"/>
+  <ellipse cx="140" cy="110" rx="8" ry="4" fill="#E9D8FD" opacity="0.5"/>
+</svg>
